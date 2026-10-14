@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# MicroPython firmware 
+firmware/
+*.uf2
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# worktree
+worktrees/
+
+# Wokwi custom chip build results (can be regenerated with `wokwi-cli chip compile`)
+*.chip.wasm
+
+# Real hardware configuration (including Wi-Fi password)
+config_local.py
+
+# Others
+ignore/
