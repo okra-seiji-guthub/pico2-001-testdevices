@@ -32,9 +32,9 @@ def sync_time(retries=3):
                 sleep(1)
     return False
 
-VSYS_STOP = 3.6      # この電圧未満が続いたら停止
-VSYS_STOP_COUNT = 3  # 連続回数
-VSYS_INTERVAL = 8    # 測定間隔(秒)
+VSYS_STOP = 3.6      # stop if VSYS stays below this voltage
+VSYS_STOP_COUNT = 3  # consecutive readings before stopping
+VSYS_INTERVAL = 8    # measurement interval (seconds)
 
 def main():
     print("LED starts flashing...")
@@ -90,6 +90,17 @@ def main():
             dist_str = f"{distance}" if distance is not None else "N/A"
             # if distance is not None and distance < 1000:
             #     print("Something is very close!")
+            imu = dev.read_imu()
+            if imu is None:
+                print("IMU: unavailable")
+            else:
+                ax, ay, az = imu["accel"]
+                gx, gy, gz = imu["gyro"]
+                print(
+                    "IMU a(g): {:.3f} {:.3f} {:.3f}  g(dps): {:.1f} {:.1f} {:.1f}  t:{:.1f}C".format(
+                        ax, ay, az, gx, gy, gz, imu["temp"]
+                    )
+                )
             print("time:", str_date_time(now), "dist:", dist_str)
             dev.oled.fill(0)
             dev.oled.text(f"{now[1]:02}-{now[2]:02} {now[3]:02}:{now[4]:02}:{now[5]:02}", 0, 0)
