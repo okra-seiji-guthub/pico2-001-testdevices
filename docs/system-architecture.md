@@ -61,6 +61,7 @@ flowchart TB
 | 処理 | 目安レート | 備考 |
 |------|------------|------|
 | IMU 読み | **240 Hz**（~4 ms/回） | `config`: accel 240 Hz。`read()` は新サンプル待ち |
+| 姿勢推定 | IMU と同じ | roll / pitch（相補フィルタ、`attitude.py`）。全サンプルを順に処理する必要があるので core1 で行う |
 | トラコン | IMU と同じ or 間引き | `limit` を算出 |
 | RC IN | 読むだけ | **PulseIn / IRQ** でキャプチャ、メインは変数参照 |
 | PWM OUT（ESC・サーボ） | **50 Hz**（20 ms） | RC パルス幅。トラコン後のスロットル |
@@ -139,7 +140,12 @@ UDP recv --> rc_cmd 変数 <-- 制御（読むだけ）
 - [hz-period-reference.md](./hz-period-reference.md) — Hz と周期の換算
 - `config.py` — IMU ODR、I2C ピン
 - `Devices.py` — センサ・Wi‑Fi 初期化
-- `blink.py` — 計測・試作用ループ（本番構成の原型）
+- `blink.py` — HW 初期化と2つのループの起動（core1 スレッド起動 → core0 で UDP ループ）
+- `control_loop.py` — core1: IMU 240Hz → トラコン → PWM（ESC / サーボ）、フェイルセーフ
+- `attitude.py` — roll / pitch の推定（`machine` 非依存の純粋な計算）
+- `udp_loop.py` — core0: UDP 受信（ノンブロック）、Poll 応答、OLED / VSYS / LED
+- `shared.py` — コア間共有状態（`array` 固定バッファ、フィールドごとに書き手は1人）
+- [protocol.md](./protocol.md) — UDP コマンド形式
 
 ## 未決・後で決める
 
