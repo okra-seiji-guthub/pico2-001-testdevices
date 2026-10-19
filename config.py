@@ -4,8 +4,11 @@
 WIFI_SSID = "Wokwi-GUEST"
 WIFI_PASSWORD = ""
 
-I2C_SCL = 9
-I2C_SDA = 8
+I2C_SDA0 = 8
+I2C_SCL0 = 9
+I2C_SDA1 = 10
+I2C_SCL1 = 11
+
 
 OLED_ADDR = 0x3C   # SA0 = GND
 OLED_CONTRAST = 0x01  # 0x00 (dim) to 0xFF (maximum brightness, default)
@@ -13,6 +16,11 @@ OLED_PRECHARGE = 0x11  # Precharge period; values below the default 0xF1 (intern
 OLED_VCOM_DESEL = 0x11  # VCOM deselect voltage; values below the default 0x30 dim the display
 BME_ADDR  = 0x76   # SDO = GND
 VL53L1X_ADDR = 0x29  # default VL53L1X I2C address
+LSM6DSV16X_ADDR = 0x6B  # this board answers at 0x6B with both address jumpers open; close 6A to select 0x6A
+LSM6DSV16X_ACCEL_ODR_HZ = 240
+LSM6DSV16X_GYRO_ODR_HZ = 240
+LSM6DSV16X_ACCEL_FS_G = 4
+LSM6DSV16X_GYRO_FS_DPS = 2000
 VL53L1X_ROI_WIDTH = 16   # 4-16 SPADs; smaller = narrower field of view (angle)
 VL53L1X_ROI_HEIGHT = 16  # 4-16 SPADs; 16x16 = full ~27 deg FoV, 4x4 = narrowest
 VL53L1X_DISTANCE_MODE = 2  # 1 = Short (~1.3m, less ambient-light sensitive), 2 = Long (~4m, default)
