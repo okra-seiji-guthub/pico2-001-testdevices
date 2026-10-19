@@ -44,6 +44,35 @@ VL53L1X_GRID_SETTLE_MS = 60  # max wait per cell (data-ready polling returns ear
 LED_EXT_PIN = 15
 ADC_PIN = 29
 
+# -- UDP remote control (udp_loop.py, core0) ---------------------------------
+UDP_PORT = 5000
+FAILSAFE_MS = 500          # no valid packet for this long -> throttle neutral, steering centre
+STATUS_INTERVAL_MS = 1000  # OLED / VSYS / LED update interval on core0
+
+# -- IMU mounting (control_loop.py) -------------------------------------------
+# Maps the sensor axes (0=X, 1=Y, 2=Z) to the car frame: (sensor axis, sign) for
+# car X (front), car Y (left), car Z (up). Applied to both accel and gyro, so
+# it must be a proper rotation (determinant +1). Default = no change.
+# For a sensor rotated 90 deg about Z, e.g. ((1, 1), (0, -1), (2, 1)).
+# To only exchange the roll / pitch outputs, use ATTITUDE_SWAP_ROLL_PITCH below.
+IMU_AXIS_MAP = ((0, 1), (1, 1), (2, 1))
+
+# -- attitude estimate (attitude.py, core1) ----------------------------------
+ATTITUDE_ALPHA = 0.98      # gyro weight of the complementary filter
+ATTITUDE_SWAP_ROLL_PITCH = True   # exchange the roll and pitch values (sensor X/Y mounted the other way round)
+ATTITUDE_ROLL_SIGN = 1     # flip to -1 if roll / pitch move the wrong way for the mounting
+ATTITUDE_PITCH_SIGN = -1
+
+# -- PWM out to ESC / servo (control_loop.py, core1) -------------------------
+ESC_PIN = 16               # provisional; override in config_local.py to match wiring
+SERVO_PIN = 17
+PWM_FREQ_HZ = 50
+ESC_NEUTRAL_US = 1500
+ESC_MAX_US = 2000          # full throttle
+ESC_MIN_US = 1000          # full brake
+SERVO_CENTER_US = 1500
+SERVO_RANGE_US = 500       # +-90 deg -> +-500 us
+
 
 
 # override with config_local.py if available
