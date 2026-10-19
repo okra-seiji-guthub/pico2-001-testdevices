@@ -17,8 +17,8 @@ OLED_VCOM_DESEL = 0x11  # VCOM deselect voltage; values below the default 0x30 d
 BME_ADDR  = 0x76   # SDO = GND
 VL53L1X_ADDR = 0x29  # default VL53L1X I2C address
 LSM6DSV16X_ADDR = 0x6B  # this board answers at 0x6B with both address jumpers open; close 6A to select 0x6A
-LSM6DSV16X_ACCEL_ODR_HZ = 120
-LSM6DSV16X_GYRO_ODR_HZ = 120
+LSM6DSV16X_ACCEL_ODR_HZ = 240
+LSM6DSV16X_GYRO_ODR_HZ = 240
 LSM6DSV16X_ACCEL_FS_G = 4
 LSM6DSV16X_GYRO_FS_DPS = 2000
 VL53L1X_ROI_WIDTH = 16   # 4-16 SPADs; smaller = narrower field of view (angle)
