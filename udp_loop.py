@@ -21,7 +21,7 @@ SET_ACCEL_RESP = 2
 SET_TC_LEVEL = 3
 
 POLL_REPLY = 0x84
-POLL_FMT = "<BBBBBBHHhhhhHhh"
+POLL_FMT = ">BBBBBBHHhhhhHhh"  # big-endian (network byte order)
 
 VSYS_STOP = 3.6       # stop if VSYS stays below this voltage
 VSYS_STOP_COUNT = 3   # consecutive readings before stopping
