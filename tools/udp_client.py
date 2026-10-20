@@ -17,7 +17,7 @@ import struct
 import time
 
 PORT = 5000
-POLL_FMT = "<BBBBBBHHhhhhHhh"
+POLL_FMT = ">BBBBBBHHhhhhHhh"  # big-endian (network byte order)
 POLL_SIZE = struct.calcsize(POLL_FMT)
 SETTINGS = {"steer-offset": (1, -20, 20), "accel-response": (2, 1, 10), "tc-level": (3, 1, 10)}
 
