@@ -1,6 +1,6 @@
-# Network protocol(UDP Binary)
+# Network protocol (UDP Binary)
 
-## 1byte
+## 1st byte
 
 - 1=Accel
 - 2=Steering
@@ -11,15 +11,14 @@
 - 7=Emergency stop
 - 8=Setting
 
-## 2byte
+## 2nd byte
 
-- 1=Accel：
-  slotle value:0~256
-
+- 1=Accel:
+  throttle value: 0~256
 - 2=Steering:
-  servo : 0~180 (90がセンター)
-- 3=Break
-  break value:0~256
+  servo: 0~180 (90 is center)
+- 3=Break:
+  break value: 0~256
 
 - 4=Poling: None
 - 5=System Stop: None
@@ -28,50 +27,50 @@
 
 - 8=Setting
   1= Steering offset degrees
-  2= Accel responce
+  2= Accel response
   3= Traction control level
 
-## 3byte (8=Setting Only)
+## 3rd byte (8=Setting Only)
 
 - 1= Steering offset degrees -20~20
-- 2= Accel responce 1~10
+- 2= Accel response 1~10
 - 3= Traction control level 1~10
 
-3byte は符号付き int8（-128〜127）として解釈し、範囲外はクランプする。
+The 3rd byte is interpreted as a signed int8 (-128 to 127); out-of-range values are clamped.
 
-## 実装上の取り決め
+## Implementation notes
 
-- 受信ポート: `config.UDP_PORT`（既定 5000）
-- Accel / Break は 1byte のため実際の範囲は **0〜255**（256 は送れない）
-- Break > 0 のときは Accel より Break を優先する
-- 長さ不足・未知のコマンドは捨てる（キープアライブ扱いにもしない）
-- **フェイルセーフ**: 有効なパケットが `config.FAILSAFE_MS`（既定 500ms）途絶えると、スロットルはニュートラル、ステアは中央になる。コマンドを送らない間は Poling(4) をキープアライブとして送り続けること
-- **Emergency stop(7)** はラッチ。System Reset(6) まで出力はニュートラルのまま
-- System Stop(5): 制御ループと UDP ループを停止する（出力はニュートラル）
-- System Reset(6): 出力をニュートラルにしてから `machine.reset()`
+- Receive port: `config.UDP_PORT` (default 5000)
+- Accel / Break are 1 byte, so the actual range is **0~255** (256 cannot be sent)
+- When Break > 0, Break takes priority over Accel
+- Packets that are too short or have an unknown command are dropped (they are not treated as keep-alive either)
+- **Failsafe**: if no valid packet arrives for `config.FAILSAFE_MS` (default 500 ms), the throttle goes to neutral and the steering to center. While not sending commands, keep sending Poling(4) as a keep-alive
+- **Emergency stop(7)** is latched. Outputs stay neutral until System Reset(6)
+- System Stop(5): stops the control loop and the UDP loop (outputs are neutral)
+- System Reset(6): sets outputs to neutral, then calls `machine.reset()`
 
-## Poling(4) 応答
+## Poling(4) response
 
-送信元アドレスへ 24byte を返す（**ビッグエンディアン**＝ネットワークバイトオーダー、`struct` 形式 `>BBBBBBHHhhhhHhh`）。コマンド側は 1byte 値だけなのでバイト順の影響はない。
+A 24-byte reply is sent back to the source address (**big-endian**, i.e. network byte order; `struct` format `>BBBBBBHHhhhhHhh`). Commands consist of single-byte values only, so byte order does not affect them.
 
-| offset | 型 | 内容 |
-|--------|----|------|
-| 0 | u8 | `0x84`（4 への応答） |
+| offset | type | content |
+|--------|------|---------|
+| 0 | u8 | `0x84` (response to 4) |
 | 1 | u8 | flags: bit0=failsafe, bit1=emergency stop |
-| 2 | u8 | Accel 指令値 0〜255 |
-| 3 | u8 | Steering 指令値 0〜180 |
-| 4 | u8 | Break 指令値 0〜255 |
+| 2 | u8 | Accel command value 0~255 |
+| 3 | u8 | Steering command value 0~180 |
+| 4 | u8 | Break command value 0~255 |
 | 5 | u8 | Traction control level |
-| 6 | u16 | ESC 出力パルス (us) |
-| 8 | u16 | サーボ出力パルス (us) |
+| 6 | u16 | ESC output pulse (us) |
+| 8 | u16 | Servo output pulse (us) |
 | 10 | i16 | accel X (mg) |
 | 12 | i16 | accel Y (mg) |
 | 14 | i16 | accel Z (mg) |
 | 16 | i16 | gyro Z (0.1 dps) |
-| 18 | u16 | 制御ループ周期 (us)、240Hz なら約 4167 |
-| 20 | i16 | roll (0.01°)。加速度とジャイロの相補フィルタ |
+| 18 | u16 | Control loop period (us); about 4167 at 240 Hz |
+| 20 | i16 | roll (0.01°). Complementary filter of accelerometer and gyro |
 | 22 | i16 | pitch (0.01°) |
 
-加速度・ジャイロはセンサーの取り付け向きを `config.IMU_AXIS_MAP` で車体座標（X=前、Y=左、Z=上。加速度は上向きの軸が + になる）に変換した値。右に傾く（右側が下がる）と左が上がるので ay > 0、roll > 0。前が下がると ax < 0、pitch > 0。roll と pitch の値を入れ替えたいときは `config.ATTITUDE_SWAP_ROLL_PITCH`（既定 True）。
+Accel and gyro values are converted from the sensor mounting orientation to the vehicle frame (X=forward, Y=left, Z=up; the upward axis is + for accel) via `config.IMU_AXIS_MAP`. Leaning right (right side down) raises the left side, so ay > 0 and roll > 0. Nose down gives ax < 0 and pitch > 0. To swap the roll and pitch values, use `config.ATTITUDE_SWAP_ROLL_PITCH` (default True).
 
-roll = `atan2(ay, az)`、pitch = `atan2(-ax, sqrt(ay²+az²))` を基準にする。符号は実機で確認して確定する（逆なら `config.ATTITUDE_ROLL_SIGN` / `ATTITUDE_PITCH_SIGN` で反転）。yaw は地磁気センサーがなくドリフトするため出さない。
+roll = `atan2(ay, az)` and pitch = `atan2(-ax, sqrt(ay²+az²))` are used as the reference. Confirm the signs on the real vehicle (if reversed, flip them with `config.ATTITUDE_ROLL_SIGN` / `ATTITUDE_PITCH_SIGN`). Yaw is not reported because there is no magnetometer and it would drift.
