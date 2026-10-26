@@ -65,13 +65,14 @@ ATTITUDE_PITCH_SIGN = -1
 
 # -- PWM out to ESC / servo (control_loop.py, core1) -------------------------
 ESC_PIN = 16               # provisional; override in config_local.py to match wiring
-SERVO_PIN = 17
+SERVO_PIN = 19
 PWM_FREQ_HZ = 50
 ESC_NEUTRAL_US = 1500
 ESC_MAX_US = 2000          # full throttle
 ESC_MIN_US = 1000          # full brake
 SERVO_CENTER_US = 1500
-SERVO_RANGE_US = 500       # +-90 deg -> +-500 us
+# so +-90 deg is +-950 us (l90 = 550 us, r90 = 2450 us).
+SERVO_RANGE_US = 950
 
 
 
