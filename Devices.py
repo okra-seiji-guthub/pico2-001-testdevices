@@ -22,7 +22,7 @@ class Devices:
         self.oled.contrast(config.OLED_CONTRAST)
         self.oled.set_precharge(config.OLED_PRECHARGE)
         self.oled.set_vcom_desel(config.OLED_VCOM_DESEL)
-        self.tof = self.init_tof(config.VL53L1X_ADDR)
+        # self.tof = self.init_tof(config.VL53L1X_ADDR)
         self.imu = self.init_imu(config.LSM6DSV16X_ADDR)
         self.wlan = self.connect_wifi()
     
