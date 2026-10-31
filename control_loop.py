@@ -1,4 +1,4 @@
-# core1: IMU -> traction control -> PWM out (ESC / servo).
+# core1: IMU -> traction control -> PWM out (ESC / servo, or TC78H653FTG).
 # No Wi-Fi, OLED or print here; keep the loop jitter low.
 # Integer math only, to avoid boxing floats on every iteration.
 from machine import Pin, PWM
@@ -6,6 +6,7 @@ import time
 import config
 import shared as sh
 from attitude import Attitude
+from tc78h653ftg import TC78H653FTG
 
 IMU_PERIOD_US = 4167      # 240 Hz; used for pacing only when the IMU is missing
 
@@ -29,6 +30,21 @@ def _pwm(pin):
     return p
 
 
+def _apply_tc78(motor, thr_us, neutral, fwd_range, brk_range, estop):
+    # Emergency stop holds the IC in standby. Neutral and a packet-timeout
+    # failsafe coast with STBY high so the next throttle starts immediately.
+    if estop:
+        motor.standby()
+        return
+    motor.enable()
+    if thr_us > neutral:
+        motor.drive((thr_us - neutral) * 255 // fwd_range)
+    elif thr_us < neutral:
+        motor.brake((neutral - thr_us) * 255 // brk_range)
+    else:
+        motor.coast()
+
+
 def _tc_limit_pct(ax, ay, level):
     h = abs(ax) + abs(ay)
     thresh = TC_BASE_MG - level * TC_STEP_MG
@@ -46,12 +62,21 @@ def run(dev):
     s_center = config.SERVO_CENTER_US
     s_range = config.SERVO_RANGE_US
 
+    motor = None
     esc = None
     servo = None
     try:
-        esc = _pwm(config.ESC_PIN)
+        if config.OUTPUT_DRIVER == "tc78h653":
+            motor = TC78H653FTG(
+                config.TC_IN1_PIN,
+                config.TC_IN2_PIN,
+                config.TC_STBY_PIN,
+                config.TC_PWM_FREQ_HZ,
+            )
+        else:
+            esc = _pwm(config.ESC_PIN)
+            esc.duty_ns(neutral * 1000)
         servo = _pwm(config.SERVO_PIN)
-        esc.duty_ns(neutral * 1000)
         servo.duty_ns(s_center * 1000)
 
         imu = dev.imu
@@ -119,7 +144,10 @@ def run(dev):
                               s_center - s_range, s_center + s_range)
 
             # 7. output
-            esc.duty_ns(thr_us * 1000)
+            if motor is not None:
+                _apply_tc78(motor, thr_us, neutral, fwd_range, brk_range, cmd[sh.CMD_ESTOP])
+            else:
+                esc.duty_ns(thr_us * 1000)
             servo.duty_ns(steer_us * 1000)
             stat[sh.STAT_THR_US] = thr_us
             stat[sh.STAT_STEER_US] = steer_us
@@ -128,7 +156,9 @@ def run(dev):
         pass
     finally:
         try:
-            if esc is not None:
+            if motor is not None:
+                motor.deinit()
+            elif esc is not None:
                 esc.duty_ns(neutral * 1000)
             if servo is not None:
                 servo.duty_ns(s_center * 1000)
