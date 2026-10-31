@@ -1,7 +1,18 @@
 # Plan: drive the motor with a TC78H653FTG (and add reverse)
 
-Status: **plan only, not implemented.** Implementation goes on a separate feature branch
-(suggested name: `feacher/feat-tc78h653-driver`) after the prerequisites below are settled.
+Status: **the driver class and the control-loop output are implemented.** UDP reverse
+(command 9), the Poll `drive` field, and the PC tools are not.
+
+`TC78H653FTG` lives in `tc78h653ftg.py`. `config.OUTPUT_DRIVER = "tc78h653"` selects it
+(the default stays `"esc"`). The control loop still computes `thr_us` and maps it:
+above neutral → `drive` (forward only), below neutral → `brake`, neutral and a
+packet-timeout failsafe → `coast` with STBY high, emergency stop and exit → `standby`.
+`drive(-255..-1)` exists on the class and is not called from the protocol.
+
+Wiring: IN1 = GP16, IN2 = GP17 (20 kHz), STBY = GP18, MODE and LARGE tied to GND
+(IN/IN, Small mode), servo stays on GP19. Sections 3–4 below are the earlier design
+(`pwm_out.py`, command 9) and are not what landed, apart from the `OUTPUT_DRIVER` switch
+and the IN/IN truth table.
 
 ## 1. Goal and scope
 
@@ -24,14 +35,14 @@ hardware owner can confirm.
 
 | # | Prerequisite | Affects |
 |---|---|---|
-| 1 | **Truth table** of the IC for the chosen MODE / LARGE strapping: forward, reverse, short brake, stop (Hi-Z), standby. The English datasheet PDF could not be read while planning; this plan **assumes the IN1/IN2 scheme with MODE low** (forward = PWM on IN1 and IN2 low, reverse = IN1 low and PWM on IN2, short brake = both high, coast = both low). Confirm or correct it. | `pwm_out.py` only |
-| 2 | **Board / module** and its pin names; whether MODE, LARGE and standby are fixed by the board or driven from a Pico GPIO. | `config.py`, `pwm_out.py` |
+| 1 | **Truth table.** **Decided:** MODE=L and LARGE=L (IN/IN, Small). Forward = PWM on IN1 and IN2 low, reverse = IN1 low and PWM on IN2, short brake = both high, coast = both low, STBY low = outputs off. Confirmed against the Toshiba datasheet. | `tc78h653ftg.py` |
+| 2 | **Board / module.** **Decided:** AE-TC78H653FTG. MODE and LARGE are tied to GND. STBY is driven by GP18 (active high), not tied to 3.3V or VM. | `config.py`, `tc78h653ftg.py` |
 | 3 | **Motor**: voltage, no-load current and stall current. This decides Small mode (2 A max) or Large mode (4 A max, both bridges in parallel). Large mode leaves no channel for another motor. | wiring, `config.py` |
 | 4 | **Supply**: the IC's VM range is about 1.8-7 V (sources disagree: 7.0 V vs 7.5 V; check the datasheet). The measured VSYS is about 6.1 V, close to the limit. A 2S LiPo (8.4 V full) is out of range. Decide the battery / regulator and add a bulk capacitor near VM for back-EMF. **Decided:** motor + servo run from 4 x AA (about 4.8-6.0 V), the Pico from a separate AAA pack; see [hardware.md](./hardware.md). | wiring |
 | 5 | **Servo power**: a separate 5 V supply (BEC). SG90 is typically 4.8-6 V with a stall current of several hundred mA; never power it from the Pico 3.3 V pin. Check the RG50 voltage range in its datasheet. Common GND for the Pico, the driver and the servo. **Decided:** the servo takes its + from the 4 x AA pack (not from the Pico side); only the signal comes from a GPIO. See [hardware.md](./hardware.md). | wiring |
-| 6 | **Pico pins**: neighbouring PWM pins (GP16/GP17, GP18/GP19, ...) share a PWM slice and therefore one frequency. The 20 kHz driver pins (IN1/IN2) and the 50 Hz servo pin must be on **different slices**. Today ESC = GP16 and SERVO = GP17 share a slice, which is fine only while both are 50 Hz. **Decided:** IN1 = GP16, IN2 = GP17 (slice 0, 20 kHz) and SERVO = GP18 (slice 1, 50 Hz); see [hardware.md](./hardware.md). | `config.py` |
-| 7 | **Neutral / failsafe state**: coast (both inputs low) or short brake for neutral, failsafe and emergency stop. Proposed: coast, like an RC ESC at neutral; a stopped Pico also leaves the inputs low. | `pwm_out.py`, docs |
-| 8 | **PWM frequency**: default 20 kHz (inaudible). Confirm it is below the IC's maximum input frequency. | `config.py` |
+| 6 | **Pico pins**: neighbouring PWM pins (GP16/GP17, GP18/GP19, ...) share a PWM slice and therefore one frequency. The 20 kHz driver pins (IN1/IN2) and the 50 Hz servo pin must be on **different slices**. **Decided:** IN1 = GP16, IN2 = GP17 (slice 0, 20 kHz), STBY = GP18 (GPIO, not PWM), SERVO = GP19 (slice 1, 50 Hz); see [hardware.md](./hardware.md). | `config.py` |
+| 7 | **Neutral / failsafe state.** **Decided:** coast with STBY high for neutral and a packet-timeout failsafe. Emergency stop and `deinit` drive STBY low. | `control_loop.py` |
+| 8 | **PWM frequency.** **Decided:** 20 kHz. The datasheet allows direct PWM up to 500 kHz (50% duty). | `config.py` |
 | 9 | **Protocol changes** (below) are accepted. | `udp_loop.py`, tools, docs |
 | 10 | **Bring-up safety**: first test with the motor disconnected, then with wheels lifted on a current-limited bench supply at low VM. | test procedure |
 

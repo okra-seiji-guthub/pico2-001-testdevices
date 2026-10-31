@@ -5,6 +5,7 @@
 import _thread
 import time
 import ntptime
+import config
 from utime import sleep
 from Devices import Devices
 import shared
@@ -37,6 +38,7 @@ def main():
     sync_time()
     now = time.localtime(time.time() + 9 * 3600)  # JST adjustment
     print("Current time:", str_date_time(now))
+    print("Output driver:", config.OUTPUT_DRIVER)
     dev.oled.fill(0)
     dev.oled.text(f"Hello {now[1]:02}-{now[2]:02}!", 0, 0)
     dev.oled.show()

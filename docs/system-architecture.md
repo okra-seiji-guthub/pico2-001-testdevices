@@ -139,12 +139,13 @@ VL53L1X（ToF）は `Devices` で初期化されるが、現状は制御ルー�
 
 - [hz-period-reference.md](./hz-period-reference.md) — Hz と周期の換算
 - [protocol.md](./protocol.md) — UDP コマンド / Poling 応答の形式
-- [hardware.md](./hardware.md) — 電源構成・ピン割り当て・まとめ基板の方針（サーボは TC78H653FTG 移行時に GP17 → GP18）
+- [hardware.md](./hardware.md) — 電源構成・ピン割り当て・まとめ基板の方針（TC78H653FTG は IN1=GP16、IN2=GP17、STBY=GP18、サーボは GP19）
 - [tc78h653-plan.md](./tc78h653-plan.md) — モータードライバ計画
 - `config.py` — IMU ODR、I2C ピン、UDP / フェイルセーフ / PWM / 姿勢設定
 - `Devices.py` — センサ・Wi‑Fi 初期化
 - `blink.py` — HW 初期化と 2 つのループの起動（core1 スレッド起動 → core0 で UDP ループ）
-- `control_loop.py` — core1: IMU 240 Hz → トラコン → PWM（ESC / サーボ）、フェイルセーフ
+- `control_loop.py` — core1: IMU 240 Hz → トラコン → PWM（ESC / サーボ、または TC78H653FTG）、フェイルセーフ
+- `tc78h653ftg.py` — TC78H653FTG（IN1/IN2 の PWM と STBY）。`OUTPUT_DRIVER = "tc78h653"` のとき使う
 - `attitude.py` — roll / pitch の推定（`machine` 非依存の純粋な計算）
 - `udp_loop.py` — core0: UDP 受信（ノンブロック）、Poling 応答、OLED / VSYS / LED
 - `shared.py` — コア間共有状態（`array` 固定バッファ、フィールドごとに書き手は 1 人）

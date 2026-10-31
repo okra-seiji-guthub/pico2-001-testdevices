@@ -64,6 +64,9 @@ ATTITUDE_ROLL_SIGN = 1     # flip to -1 if roll / pitch move the wrong way for t
 ATTITUDE_PITCH_SIGN = -1
 
 # -- PWM out to ESC / servo (control_loop.py, core1) -------------------------
+# "esc": 50 Hz pulse on ESC_PIN. "tc78h653": H-bridge on TC_IN1/IN2 (tc78h653ftg.py).
+# Real hardware selects the driver in config_local.py.
+OUTPUT_DRIVER = "esc"
 ESC_PIN = 16               # provisional; override in config_local.py to match wiring
 SERVO_PIN = 19
 PWM_FREQ_HZ = 50
@@ -73,6 +76,13 @@ ESC_MIN_US = 1000          # full brake
 SERVO_CENTER_US = 1500
 # so +-90 deg is +-950 us (l90 = 550 us, r90 = 2450 us).
 SERVO_RANGE_US = 950
+
+# TC78H653FTG (OUTPUT_DRIVER = "tc78h653"). IN1/IN2 are PWM slice 0.
+# SERVO_PIN must not be GP16 or GP17, or 50 Hz and 20 kHz share a slice.
+TC_IN1_PIN = 16
+TC_IN2_PIN = 17
+TC_STBY_PIN = 18           # active high; do not tie STBY to VM
+TC_PWM_FREQ_HZ = 20000
 
 
 
